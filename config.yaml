@@ -1,0 +1,7 @@
+names:
+- person
+- hi-vis
+nc: 2
+test: ./dataset/test/images
+train: ./dataset/train/images
+val: ./dataset/val/images
