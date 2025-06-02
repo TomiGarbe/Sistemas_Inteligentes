@@ -2,6 +2,7 @@ import streamlit as st
 import cv2
 import numpy as np
 import time
+from ultralytics import YOLO
 from PIL import Image
 st.set_page_config(page_title="Detección de Personas y Chalecos", layout="wide", initial_sidebar_state="collapsed")
 
@@ -119,8 +120,10 @@ with tab1:
     frame_placeholder = u2.empty()
 
     if st.session_state.cam_on:
+        # Load the trained YOLO model
+        model = YOLO("../runs/detect/train2/weights/best.pt")
         cap = cv2.VideoCapture(0)
-        time.sleep(0.1)
+        #time.sleep(0.1)
         if not cap.isOpened():
             st.error("Error al abrir la cámara.")
             st.session_state.cam_on = False
@@ -133,9 +136,19 @@ with tab1:
                         break
                     
                     frame = cv2.flip(frame, 1)
-                    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    
+                    # Perform detection
+                    results = model(frame, conf=0.7)[0]  # conf=0.7 for minimum confidence
+                    
+                    # Plot the results on the frame
+                    annotated_frame = results.plot()  # This draws boxes and labels
+                    
+                    rgb = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
                     frame_placeholder.image(rgb, channels="RGB", use_container_width=True)
-                    time.sleep(0.05)
+                    
+                    #detection_count = len(results.boxes)
+                    #st.write(f"Detecciones: {detection_count} (Personas y Chalecos)")
+                    #time.sleep(0.05)
             except Exception:
                 pass
             finally:
@@ -153,17 +166,33 @@ with tab2:
         uploaded = st.file_uploader("", type=["jpg", "jpeg", "png"])
 
     if uploaded:
+        # Convert uploaded file to OpenCV image
+        file_bytes = np.asarray(bytearray(uploaded.read()), dtype=np.uint8)
+        image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        
+        # Load the trained YOLO model
+        model = YOLO("../runs/detect/train2/weights/best.pt")
+        
+        # Perform detection
+        with st.spinner("Analizando imagen..."):
+            results = model(image, conf=0.7)[0]  # conf=0.7 for minimum confidence
+            
+            # Annotate the image with detections
+            annotated_image = results.plot()  # Draw bounding boxes and labels
+            
+            # Convert BGR to RGB for Streamlit
+            annotated_image_rgb = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
+            
+        # Display original and annotated images side by side
         ci1, ci2, ci3 = st.columns([1, 2, 1])
+        with ci1:
+            st.image(image, caption="Imagen Original", use_container_width=True)
         with ci2:
-            st.image(uploaded, use_container_width=True)
+            st.image(annotated_image_rgb, caption="Imagen Analizada", use_container_width=True)
 
-        cb1, cb2, cb3 = st.columns([1, 2, 1])
-        with cb2:
-            if st.button("Analizar Imagen"):
-                with st.spinner("Analizando imagen..."):
-                    time.sleep(1)
-                resultado = np.random.choice(["Chaleco Detectado", "Chaleco Ausente", "Sin Persona"])
-                st.success(resultado)
+        # Display detection count
+        #detection_count = len(results.boxes)
+        #st.write(f"Detecciones: {detection_count} (Personas y Chalecos)")
 
 # ------------------------------------------
 # 6) TAB 2: ANALIZAR VIDEO
@@ -171,15 +200,55 @@ with tab2:
 with tab3:
     st.markdown("<h3 style='text-align:left; color:#000000;'>Análisis de Video Subido</h3>", unsafe_allow_html=True)
 
-
     # Centrar el uploader en columnas [1,2,1]
     cu1, cu2, cu3 = st.columns([1, 2, 1])
     with cu2:
         uploaded_video = st.file_uploader( "", type=["mp4", "avi", "mov"]  )
 
     if uploaded_video:
-        # Ahora centramos la reproducción del video, de nuevo en [1,2,1]
-        v1, v2, v3 = st.columns([1, 2, 1])
-        with v2:
-            # st.video acepta directamente el archivo subido
-            st.video(uploaded_video, format="video/mp4", start_time=0)
+        # Save uploaded video temporarily
+        with open("temp_video.mp4", "wb") as f:
+            f.write(uploaded_video.getbuffer())
+        
+        # Load the trained YOLO model
+        model = YOLO("../runs/detect/train2/weights/best.pt")
+        
+        # Open video file
+        cap = cv2.VideoCapture("temp_video.mp4")
+        if not cap.isOpened():
+            st.error("Error al abrir el video.")
+        else:
+            # Process video frames
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            st.write(f"Total de fotogramas: {frame_count}")
+            annotated_frames = []
+            
+            with st.spinner("Analizando video..."):
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    # Perform detection
+                    results = model(frame, conf=0.7)[0]
+                    annotated_frame = results.plot()  # Draw bounding boxes and labels
+                    
+                    # Store annotated frame (limit to first few for display)
+                    annotated_frames.append(annotated_frame)
+                    if len(annotated_frames) >= 5:  # Show first 5 frames as sample
+                        break
+                
+                cap.release()
+
+            # Display sample annotated frames
+            v1, v2, v3 = st.columns([1, 2, 1])
+            with v2:
+                for i, annotated_frame in enumerate(annotated_frames):
+                    st.image(cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB), caption=f"Fotograma {i+1}", use_container_width=True)
+
+            #total_detections = sum(len(result.boxes) for result in model.track(source="temp_video.mp4", conf=0.5))
+            #st.write(f"Detecciones totales: {total_detections} (Personas y Chalecos)")
+
+        # Clean up temporary file
+        import os
+        os.remove("temp_video.mp4")
