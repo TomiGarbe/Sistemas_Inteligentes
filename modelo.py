@@ -10,5 +10,5 @@ if __name__ == '__main__':
     model.to('cuda:0')
     # Se entrena el modelo con tus propios datos
     # data="./config.yaml": usa el archivo que contiene rutas de entrenamiento, validación, test, cantidad de clases y sus nombres
-    # epochs=50 y patience=5: establece un maximo de 50 epocas pero en caso de que no mejore durante 5 epocas seguidas se frena el entrnamiento.
-    results = model.train(data="./config.yaml", epochs=50, amp=False, workers=0, patience=5)
+    # epochs=50 y patience=5: establece un maximo de 150 epocas pero en caso de que no mejore durante 5 epocas seguidas se frena el entrnamiento.
+    results = model.train(data="./config.yaml", epochs=150, amp=False, workers=0, patience=5)
