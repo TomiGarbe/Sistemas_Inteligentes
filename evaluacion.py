@@ -1,133 +1,145 @@
-# evaluacion_test_solometrics.py
 import os
-from ultralytics import YOLO
+import subprocess
+import sys
+from pathlib import Path
+
+import pandas as pd
 import matplotlib.pyplot as plt
+from ultralytics import YOLO
 
-# ----------------------------------------
-# 1) Configuración de rutas y parámetros
-# ----------------------------------------
+MODEL_PATH      = "runs/detect/train2/weights/best.pt"
+DATA_YAML       = "config.yaml"
+VAL_RESULTS_CSV = "runs/detect/train2/results.csv"
+IMG_SIZE        = 640
+BATCH           = 4
+DEVICE          = "cpu"
+RLTS_DIR        = Path("runs/detect/test_eval")
+OUT_DIR         = RLTS_DIR / "metricas"
 
-# Ruta a tu modelo entrenado (best.pt)
-MODEL_PATH = "./runs/detect/train2/weights/best.pt"
+def ensure_test_split():
+    """Si no existe dataset/test/images, ejecuta dataset.py"""
+    test_images = Path("dataset/test/images")
+    if test_images.is_dir() and any(test_images.iterdir()):
+        print("[OK] dataset/test/ ya existe.")
+        return
 
-# Archivo YAML que contenga al menos la clave `test: ./dataset/test/images`
-DATA_YAML = "./config.yaml"
+    print("[INFO] dataset/test/ no encontrado; generando con dataset.py…")
+    if not Path("dataset.py").is_file():
+        sys.exit("❌ No encuentro dataset.py. Colócalo junto a este script.")
 
-# Tamaño de imagen para la validación (igual al que usaste en el entrenamiento)
-IMG_SIZE = 640
+    subprocess.run([sys.executable, "dataset.py"], check=True)
 
-# Batch size para la evaluación; si usas solo CPU, bájalo a 4 u 8
-BATCH_SIZE = 8
-
-# Dispositivo: "cpu" o "cuda:0" si dispones de GPU Nvidia
-DEVICE = "cpu"
-
-# Carpeta donde guardaremos los gráficos de cada métrica de TEST
-output_dir = "metricas_test"
-os.makedirs(output_dir, exist_ok=True)
-
-
-# ----------------------------------------
-# 2) Verificar que existan los archivos
-# ----------------------------------------
-if not os.path.isfile(MODEL_PATH):
-    raise FileNotFoundError(f"No encontré el modelo en: {MODEL_PATH}")
-if not os.path.isfile(DATA_YAML):
-    raise FileNotFoundError(f"No encontré el data.yaml en: {DATA_YAML}")
+    if not test_images.is_dir() or not any(test_images.iterdir()):
+        sys.exit("❌ Después de correr dataset.py sigue sin existir dataset/test/. Revisa rutas en dataset.py.")
 
 
-# ----------------------------------------
-# 3) Cargar el modelo YOLOv8 entrenado
-# ----------------------------------------
-model = YOLO(MODEL_PATH)
-print(f"✔️  Modelo cargado desde: {MODEL_PATH}\n")
-
-
-# ----------------------------------------
-# 4) Ejecutar evaluación sobre TEST
-# ----------------------------------------
-print("🔍 Ejecutando evaluación en TEST (solo sobre dataset/test)...\n")
-results_test = model.val(
-    data=DATA_YAML,
-    split="test",     # Usa únicamente la sección `test:` de tu config.yaml
-    imgsz=IMG_SIZE,
-    batch=BATCH_SIZE,
-    device=DEVICE
-)
-
-# Extraer métricas globales de results_test.box:
-#  • mp: Precision promedio sobre clases (@IoU=0.5)
-#  • mr: Recall promedio sobre clases (@IoU=0.5)
-#  • map50: mAP @ IoU=0.50
-#  • map:   mAP @ IoU=0.50:0.95
-#  • f1 (list): F1 por clase. Tomamos la media para obtener F1 global.
-p50_test_global   = float(results_test.box.mp)
-r50_test_global   = float(results_test.box.mr)
-map50_test_global = float(results_test.box.map50)
-map95_test_global = float(results_test.box.map)
-f1_per_class      = results_test.box.f1  # lista de F1 por clase
-if len(f1_per_class) > 0:
-    f1_test_global = float(sum(f1_per_class) / len(f1_per_class))
-else:
-    f1_test_global = 0.0  # en caso de no haber clases
-
-print(f"Precision @0.5  (TEST): {p50_test_global:.4f}")
-print(f"Recall    @0.5  (TEST): {r50_test_global:.4f}")
-print(f"mAP   @0.50     (TEST): {map50_test_global:.4f}")
-print(f"mAP @0.50:0.95  (TEST): {map95_test_global:.4f}")
-print(f"F1 score        (TEST): {f1_test_global:.4f}\n")
-
-
-# ----------------------------------------
-# 5) Preparar datos para generar cada gráfico
-# ----------------------------------------
-metric_names = ["Precision@0.5", "Recall@0.5", "mAP@0.50", "mAP@0.50:0.95", "F1"]
-values_test = [
-    p50_test_global,
-    r50_test_global,
-    map50_test_global,
-    map95_test_global,
-    f1_test_global
-]
-
-# ----------------------------------------
-# 6) Generar y guardar un gráfico por cada métrica (solo TEST)
-# ----------------------------------------
-for i, name in enumerate(metric_names):
-    test_value = values_test[i]
-
-    # Crear la figura
-    plt.figure(figsize=(4, 4))
-    bar = plt.bar(
-        [name],
-        [test_value],
-        color="tab:blue",
-        width=0.4
+def eval_on_test():
+    """Ejecuta la validación en split=test y devuelve el objeto Results"""
+    print("\n[INFO] Evaluando modelo en TEST …")
+    model = YOLO(MODEL_PATH)
+    results = model.val(
+        data=DATA_YAML,
+        split="test",
+        imgsz=IMG_SIZE,
+        batch=BATCH,
+        device=DEVICE,
+        project=str(RLTS_DIR.parent),  # "runs/detect"
+        name=RLTS_DIR.name,            # "test_eval"
+        exist_ok=True
     )
+    return results
 
-    # Etiquetas y título
-    plt.ylim(0.0, 1.0)
-    plt.ylabel(name)
-    plt.title(f"{name} (TEST)")
-    plt.grid(axis="y", linestyle="--", alpha=0.5)
 
-    # Mostrar el valor encima de la barra
-    height = bar[0].get_height()
-    plt.text(
-        bar[0].get_x() + bar[0].get_width() / 2,
-        height + 0.02,
-        f"{test_value:.3f}",
-        ha="center",
-        va="bottom"
-    )
+def load_val_metrics():
+    """
+    Carga la última fila de results.csv con las métricas de validación.
+    Calcula F1 = 2·P·R / (P + R), ya que el CSV no incluye F1.
+    """
+    if not Path(VAL_RESULTS_CSV).is_file():
+        sys.exit(f"❌ No encuentro {VAL_RESULTS_CSV}. Asegúrate de tenerlo en la misma carpeta.")
+    df = pd.read_csv(VAL_RESULTS_CSV)
+    last = df.iloc[-1]
 
-    # Guardar la figura en un archivo PNG
-    safe_name = name.replace("@", "").replace(":", "_").replace(".", "")
-    filename = os.path.join(output_dir, f"{safe_name}_TEST.png")
-    plt.tight_layout()
-    plt.savefig(filename, dpi=300)
-    plt.close()
+    p_val   = float(last["metrics/precision(B)"])
+    r_val   = float(last["metrics/recall(B)"])
+    map50   = float(last["metrics/mAP50(B)"])
+    map5095 = float(last["metrics/mAP50-95(B)"])
+    if p_val + r_val > 0:
+        f1_val = 2 * (p_val * r_val) / (p_val + r_val)
+    else:
+        f1_val = 0.0
 
-    print(f"✔ Gráfico guardado en: {filename}")
+    return {
+        "Precision": round(p_val, 3),
+        "Recall":    round(r_val, 3),
+        "mAP50":     round(map50, 3),
+        "mAP50-95":  round(map5095, 3),
+        "F1":        round(f1_val, 3),
+    }
 
-print(f"\nListo: se generaron y guardaron 5 imágenes en la carpeta '{output_dir}'.")
+
+def extract_test_metrics(results):
+    """Devuelve métricas globales (promedio de clases) desde `results`."""
+    precision = float(results.box.mp)
+    recall    = float(results.box.mr)
+    map50     = float(results.box.map50)
+    map5095   = float(results.box.map)
+    import numpy as np
+    f1_array  = np.asarray(results.box.f1, dtype=float)
+    f1_global = float(f1_array.mean())
+
+    return {
+        "Precision": round(precision, 3),
+        "Recall":    round(recall, 3),
+        "mAP50":     round(map50, 3),
+        "mAP50-95":  round(map5095, 3),
+        "F1":        round(f1_global, 3),
+    }
+
+
+def compare_and_plot(val_m, test_m):
+    """Imprime tabla comparativa y genera gráficos con valores encima de cada barra."""
+    print("\n========== COMPARACIÓN VAL vs TEST ==========")
+    for k in val_m:
+        delta = (test_m[k] - val_m[k]) * 100
+        print(f"{k:10s}: val={val_m[k]:.3f} | test={test_m[k]:.3f} | Δ={delta:+.1f}%")
+
+    # Nos aseguramos de que exista la carpeta de salida
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    for k in val_m:
+        plt.figure()
+        bars = plt.bar(["Validación", "Test"], [val_m[k], test_m[k]], width=0.5)
+        plt.title(f"{k} • Validación vs Test")
+        plt.ylabel(k)
+        plt.ylim(0, 1)
+
+        # Añadimos el valor encima de cada barra
+        for idx, height in enumerate([val_m[k], test_m[k]]):
+            plt.text(
+                idx,
+                height + 0.02,
+                f"{height:.3f}",
+                ha="center",
+                va="bottom",
+                fontsize=9
+            )
+
+        filename = OUT_DIR / f"{k.replace(' ', '_')}_val_vs_test.png"
+        plt.tight_layout()
+        plt.savefig(filename, dpi=200, bbox_inches="tight")
+        plt.close()
+
+    print(f"\n[OK] PNG guardados en {OUT_DIR}/")
+
+
+def main():
+    ensure_test_split()
+    results      = eval_on_test()
+    test_metrics = extract_test_metrics(results)
+    val_metrics  = load_val_metrics()
+    compare_and_plot(val_metrics, test_metrics)
+
+
+if __name__ == "__main__":
+    main()
