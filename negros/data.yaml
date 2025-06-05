@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['Person']
+
+roboflow:
+  workspace: projet-drone-labo-ia-be
+  project: projet-drone
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/projet-drone-labo-ia-be/projet-drone/dataset/3
