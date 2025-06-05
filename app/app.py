@@ -121,7 +121,7 @@ with tab1:
 
     if st.session_state.cam_on:
         # Load the trained YOLO model
-        model = YOLO("../runs/detect/train2/weights/best.pt")
+        model = YOLO("../runs/detect/train3/weights/best.pt")
         cap = cv2.VideoCapture(0)
         #time.sleep(0.1)
         if not cap.isOpened():
@@ -138,7 +138,7 @@ with tab1:
                     frame = cv2.flip(frame, 1)
                     
                     # Perform detection
-                    results = model(frame, conf=0.7)[0]  # conf=0.7 for minimum confidence
+                    results = model(frame, conf=0.5)[0]  # conf=0.5 for minimum confidence
                     
                     # Plot the results on the frame
                     annotated_frame = results.plot()  # This draws boxes and labels
@@ -171,11 +171,11 @@ with tab2:
         image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
         
         # Load the trained YOLO model
-        model = YOLO("../runs/detect/train2/weights/best.pt")
+        model = YOLO("../runs/detect/train3/weights/best.pt")
         
         # Perform detection
         with st.spinner("Analizando imagen..."):
-            results = model(image, conf=0.7)[0]  # conf=0.7 for minimum confidence
+            results = model(image, conf=0.5)[0]  # conf=0.5 for minimum confidence
             
             # Annotate the image with detections
             annotated_image = results.plot()  # Draw bounding boxes and labels
@@ -211,7 +211,7 @@ with tab3:
             f.write(uploaded_video.getbuffer())
         
         # Load the trained YOLO model
-        model = YOLO("../runs/detect/train2/weights/best.pt")
+        model = YOLO("../runs/detect/train3/weights/best.pt")
         
         # Open video file
         cap = cv2.VideoCapture("temp_video.mp4")
@@ -230,7 +230,7 @@ with tab3:
                         break
                     
                     # Perform detection
-                    results = model(frame, conf=0.7)[0]
+                    results = model(frame, conf=0.5)[0]
                     annotated_frame = results.plot()  # Draw bounding boxes and labels
                     
                     # Store annotated frame (limit to first few for display)
