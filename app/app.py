@@ -128,6 +128,8 @@ with tab1:
             st.error("Error al abrir la cámara.")
             st.session_state.cam_on = False
         else:
+            # Crear placeholder para cartel de personas
+            person_count_placeholder = st.empty()
             try:
                 while st.session_state.cam_on:
                     ret, frame = cap.read()
@@ -140,15 +142,41 @@ with tab1:
                     # Perform detection
                     results = model(frame, conf=0.5)[0]  # conf=0.5 for minimum confidence
                     
-                    # Plot the results on the frame
-                    annotated_frame = results.plot()  # This draws boxes and labels
-                    
+                    # Contar personas (clase 0)
+                    person_count = sum(1 for box in results.boxes if int(box.cls[0]) == 0)
+                    # Contar chalecos (clase 1)
+                    hivis_count = sum(1 for box in results.boxes if int(box.cls[0]) == 1)
+                    # Contar personas sin chaleco
+                    personas_sin_chaleco = person_count - hivis_count
+
+                    annotated_frame = results.plot()
                     rgb = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
                     frame_placeholder.image(rgb, channels="RGB", use_container_width=True)
+
+                    # Mostrar cartel estático abajo a la derecha
+                    person_count_placeholder.markdown(
+                        f"""
+                        <div style="
+                            position: fixed;
+                            bottom: 20px;
+                            right: 20px;
+                            background-color: #FFD700;
+                            color: black;
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            font-weight: bold;
+                            font-size: 18px;
+                            box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+                            z-index: 9999;
+                        ">
+                            Personas detectadas: {person_count}<br>
+                            Chalecos detectados: {hivis_count}<br>
+                            Personas sin chaleco: {personas_sin_chaleco}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
                     
-                    #detection_count = len(results.boxes)
-                    #st.write(f"Detecciones: {detection_count} (Personas y Chalecos)")
-                    #time.sleep(0.05)
             except Exception:
                 pass
             finally:
@@ -185,8 +213,9 @@ with tab2:
             
         # Display original and annotated images side by side
         ci1, ci2, ci3 = st.columns([1, 2, 1])
-        with ci1:
-            st.image(image, caption="Imagen Original", use_container_width=True)
+        # Para que se vea la imagen chica a la izquierda, descomentar las dos líneas siguientes:
+        #with ci1:
+        #   st.image(image, caption="Imagen Original", use_container_width=True)
         with ci2:
             st.image(annotated_image_rgb, caption="Imagen Analizada", use_container_width=True)
 
