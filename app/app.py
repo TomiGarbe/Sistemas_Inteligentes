@@ -1,5 +1,5 @@
 import streamlit as st
-import cv2
+import cv2, os
 import numpy as np
 import time
 from ultralytics import YOLO
@@ -61,6 +61,20 @@ body, .stApp {
   color: rgb(0, 0, 0);  /* aquí pones el color que quieras */
 }
             
+div.st-emotion-cache-fis6aj {
+    color: #FFFFFF;
+    background-color: rgb(38, 39, 48);
+    border-radius: 8px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+            
+div.stFileUploaderFile * {
+    color: rgba(250, 250, 250, 0.6);
+}
+               
 </style>
 """, unsafe_allow_html=True)
 
@@ -229,55 +243,53 @@ with tab2:
 with tab3:
     st.markdown("<h3 style='text-align:left; color:#000000;'>Análisis de Video Subido</h3>", unsafe_allow_html=True)
 
-    # Centrar el uploader en columnas [1,2,1]
+    # uploader centrado
     cu1, cu2, cu3 = st.columns([1, 2, 1])
     with cu2:
-        uploaded_video = st.file_uploader( "", type=["mp4", "avi", "mov"]  )
+        uploaded_video = st.file_uploader("", type=["mp4", "avi", "mov"])
 
     if uploaded_video:
-        # Save uploaded video temporarily
-        with open("temp_video.mp4", "wb") as f:
+        temp_in = "temp_video.mp4"
+        with open(temp_in, "wb") as f:
             f.write(uploaded_video.getbuffer())
-        
-        # Load the trained YOLO model
+
         model = YOLO("../runs/detect/train3/weights/best.pt")
-        
-        # Open video file
-        cap = cv2.VideoCapture("temp_video.mp4")
+        cap   = cv2.VideoCapture(temp_in)
+
         if not cap.isOpened():
-            st.error("Error al abrir el video.")
+            st.error("No se pudo abrir el video")
         else:
-            # Process video frames
-            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            st.write(f"Total de fotogramas: {frame_count}")
-            annotated_frames = []
-            
-            with st.spinner("Analizando video..."):
-                while cap.isOpened():
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-                    
-                    # Perform detection
-                    results = model(frame, conf=0.5)[0]
-                    annotated_frame = results.plot()  # Draw bounding boxes and labels
-                    
-                    # Store annotated frame (limit to first few for display)
-                    annotated_frames.append(annotated_frame)
-                    if len(annotated_frames) >= 5:  # Show first 5 frames as sample
-                        break
-                
-                cap.release()
+            total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps   = cap.get(cv2.CAP_PROP_FPS) or 25
 
-            # Display sample annotated frames
+            # ❱❱ NUEVO: placeholder en columna central
             v1, v2, v3 = st.columns([1, 2, 1])
-            with v2:
-                for i, annotated_frame in enumerate(annotated_frames):
-                    st.image(cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB), caption=f"Fotograma {i+1}", use_container_width=True)
+            frame_box  = v2.empty()
 
-            #total_detections = sum(len(result.boxes) for result in model.track(source="temp_video.mp4", conf=0.5))
-            #st.write(f"Detecciones totales: {total_detections} (Personas y Chalecos)")
+            bar = st.progress(0.0)
+            w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            max_lado = max(w, h)
+            scale = 1.0 if max_lado <= 720 else 720 / max_lado
 
-        # Clean up temporary file
-        import os
-        os.remove("temp_video.mp4")
+            frame_idx = 0
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                if scale < 1.0:
+                    frame = cv2.resize(frame, (int(w*scale), int(h*scale)), interpolation=cv2.INTER_AREA)
+
+                results   = model(frame, conf=0.5)[0]
+                rgb       = cv2.cvtColor(results.plot(), cv2.COLOR_BGR2RGB)
+                frame_box.image(rgb, channels="RGB", use_container_width=True)
+
+                frame_idx += 1
+                if frame_idx % 10 == 0:
+                    bar.progress(min(frame_idx / total, 1.0))
+
+            cap.release()
+            bar.empty()
+            st.success("✅ Análisis terminado")
+        os.remove(temp_in)
