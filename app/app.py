@@ -13,7 +13,7 @@ st.markdown("""
 <style>
 body, .stApp {
   background-color: #F0F0F0;
-}    
+}
                 
 .stTabs [data-baseweb="tab-list"] {
   display: flex;
@@ -88,7 +88,7 @@ st.markdown(
 )
 
 st.markdown("<h1 style='text-align:center; font-weight:800; color:#000000;'>PERSONAS Y CHALECOS DE SEGURIDAD</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; color:#000000;'>Detección en Tiempo Real, en Imágenes y Videos</p>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align:center; color:#000000;'>Detección en Tiempo Real, en Imágenes y Videos</h4>", unsafe_allow_html=True)
 
 # Banda de seguridad (rayas amarillas y negras)
 st.markdown(
