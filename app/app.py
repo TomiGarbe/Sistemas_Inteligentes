@@ -4,7 +4,7 @@ import numpy as np
 import time
 from ultralytics import YOLO
 from PIL import Image
-st.set_page_config(page_title="Detección de Personas y Chalecos", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Detección de Personas y Chalecos", layout="wide")
 
 # -------------------------------------------------
 # 1) ESTILOS CSS GLOBALES
@@ -37,7 +37,7 @@ body, .stApp {
 }
 
 .stTabs [role="tab"][aria-selected="true"] {
-  background-color: #FFA500;
+  background-color: #FEBA28;
   color: #222;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
@@ -70,7 +70,7 @@ div.st-emotion-cache-fis6aj {
     padding-left: 1rem;
     padding-right: 1rem;
 }
-            
+
 div.stFileUploaderFile * {
     color: rgba(250, 250, 250, 0.6);
 }
@@ -83,7 +83,7 @@ div.stFileUploaderFile * {
 # ------------------------------------------
 st.markdown(
     "<div style='width:100%; height:10px;"
-    "background: repeating-linear-gradient(45deg, #FFD700 0px, #FFD700 10px, #000000 10px, #000000 20px);'></div>",
+    "background: repeating-linear-gradient(45deg, #FEBA28 0px, #FEBA28 10px, #000000 10px, #000000 20px);'></div>",
     unsafe_allow_html=True
 )
 
@@ -93,7 +93,7 @@ st.markdown("<h4 style='text-align:center; color:#000000;'>Detección en Tiempo 
 # Banda de seguridad (rayas amarillas y negras)
 st.markdown(
     "<div style='width:100%; height:10px; margin-bottom: 20px; "
-    "background: repeating-linear-gradient(45deg, #FFD700 0px, #FFD700 10px, #000000 10px, #000000 20px);'></div>",
+    "background: repeating-linear-gradient(45deg, #FEBA28 0px, #FEBA28 10px, #000000 10px, #000000 20px);'></div>",
     unsafe_allow_html=True
 )
 
@@ -137,60 +137,106 @@ with tab1:
         # Load the trained YOLO model
         model = YOLO("../runs/detect/train3/weights/best.pt")
         cap = cv2.VideoCapture(0)
-        #time.sleep(0.1)
+
+        frame_times = []
+
         if not cap.isOpened():
             st.error("Error al abrir la cámara.")
             st.session_state.cam_on = False
         else:
             # Crear placeholder para cartel de personas
             person_count_placeholder = st.empty()
+            latency_placeholder = st.empty()
             try:
                 while st.session_state.cam_on:
+                    start_time = time.time() 
                     ret, frame = cap.read()
                     if not ret:
                         st.error("Error capturando frame.")
                         break
                     
-                    frame = cv2.flip(frame, 1)
-                    
                     # Perform detection
+                    frame = cv2.flip(frame, 1)
                     results = model(frame, conf=0.5)[0]  # conf=0.5 for minimum confidence
+                    elapsed = (time.time() - start_time) * 1000  # en milisegundos
                     
-                    # Contar personas (clase 0)
                     person_count = sum(1 for box in results.boxes if int(box.cls[0]) == 0)
-                    # Contar chalecos (clase 1)
                     hivis_count = sum(1 for box in results.boxes if int(box.cls[0]) == 1)
-                    # Contar personas sin chaleco
                     personas_sin_chaleco = person_count - hivis_count
+                    personas_con_chaleco = person_count - personas_sin_chaleco
+
+                    # Guarda la info en session_state para la otra page
+                    if "personas_x_frame" not in st.session_state:
+                        st.session_state["personas_x_frame"] = []
+                    if "chalecos_x_frame" not in st.session_state:
+                        st.session_state["chalecos_x_frame"] = []
+                    if "latencias" not in st.session_state:
+                        st.session_state["latencias"] = []
+                    
+                    st.session_state["personas_x_frame"].append(person_count)
+                    st.session_state["chalecos_x_frame"].append(hivis_count)
+                    st.session_state["latencias"].append(elapsed)
+                    frame_timestamp = time.time()
+                    if "frame_timestamps" not in st.session_state:
+                        st.session_state["frame_timestamps"] = []
+                    st.session_state["frame_timestamps"].append(frame_timestamp)
 
                     annotated_frame = results.plot()
                     rgb = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
                     frame_placeholder.image(rgb, channels="RGB", use_container_width=True)
+
+                    frame_times.append(elapsed)
+                    if len(frame_times) > 30:  # promedio de los últimos 30 frames
+                        frame_times = frame_times[-30:]
+                    avg_latency = sum(frame_times) / len(frame_times)
+                    avg_fps = 1000 / avg_latency if avg_latency > 0 else 0
 
                     # Mostrar cartel estático abajo a la derecha
                     person_count_placeholder.markdown(
                         f"""
                         <div style="
                             position: fixed;
-                            bottom: 20px;
+                            bottom: 75px;
                             right: 20px;
-                            background-color: #FFD700;
+                            background-color: #FEBA28;
                             color: black;
                             padding: 10px 20px;
                             border-radius: 10px;
                             font-weight: bold;
-                            font-size: 18px;
-                            box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+                            font-size: 1rem;
+                            box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
                             z-index: 9999;
                         ">
                             Personas detectadas: {person_count}<br>
                             Chalecos detectados: {hivis_count}<br>
-                            Personas sin chaleco: {personas_sin_chaleco}
+                            Personas sin chaleco: {personas_sin_chaleco}<br>
+                            Personas sin chaleco: {personas_con_chaleco}
                         </div>
                         """,
                         unsafe_allow_html=True
                     )
                     
+                    latency_placeholder.markdown(
+                        f"""
+                        <div style="
+                            position: fixed;
+                            bottom: 20px;
+                            right: 20px;
+                            background-color: #FEBA28;
+                            color: black;
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            font-weight: bold;
+                            font-size: 1rem;
+                            box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+                            z-index: 9999;
+                        ">
+                            Latencia promedio: {avg_latency:.1f} ms &nbsp;|&nbsp; FPS: {avg_fps:.1f}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                
             except Exception:
                 pass
             finally:
@@ -231,7 +277,8 @@ with tab2:
         #with ci1:
         #   st.image(image, caption="Imagen Original", use_container_width=True)
         with ci2:
-            st.image(annotated_image_rgb, caption="Imagen Analizada", use_container_width=True)
+            st.image(annotated_image_rgb, use_container_width=True)
+            st.success("Análisis de imagen terminado")
 
         # Display detection count
         #detection_count = len(results.boxes)
@@ -266,6 +313,9 @@ with tab3:
             v1, v2, v3 = st.columns([1, 2, 1])
             frame_box  = v2.empty()
 
+            person_count_placeholder = st.empty()
+            latency_placeholder = st.empty()
+
             bar = st.progress(0.0)
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -273,7 +323,10 @@ with tab3:
             scale = 1.0 if max_lado <= 720 else 720 / max_lado
 
             frame_idx = 0
+            frame_times = []
+            
             while True:
+                start_time = time.time()
                 ret, frame = cap.read()
                 if not ret:
                     break
@@ -289,7 +342,81 @@ with tab3:
                 if frame_idx % 10 == 0:
                     bar.progress(min(frame_idx / total, 1.0))
 
+                elapsed = (time.time() - start_time) * 1000  # en milisegundos
+                person_count = sum(1 for box in results.boxes if int(box.cls[0]) == 0)
+                hivis_count = sum(1 for box in results.boxes if int(box.cls[0]) == 1)
+                personas_sin_chaleco = person_count - hivis_count
+                personas_con_chaleco = person_count - personas_sin_chaleco    
+
+                frame_timestamp = time.time()
+                if "frame_timestamps" not in st.session_state:
+                    st.session_state["frame_timestamps"] = []
+                st.session_state["frame_timestamps"].append(frame_timestamp)
+
+                # Guarda la info en session_state para la otra page
+                if "personas_x_frame" not in st.session_state:
+                    st.session_state["personas_x_frame"] = []
+                if "chalecos_x_frame" not in st.session_state:
+                    st.session_state["chalecos_x_frame"] = []
+                if "latencias" not in st.session_state:
+                    st.session_state["latencias"] = []
+                
+                st.session_state["personas_x_frame"].append(person_count)
+                st.session_state["chalecos_x_frame"].append(hivis_count)
+                st.session_state["latencias"].append(elapsed)
+
+                frame_times.append(elapsed)
+                if len(frame_times) > 30:
+                    frame_times = frame_times[-30:]
+                avg_latency = sum(frame_times) / len(frame_times)
+                avg_fps = 1000 / avg_latency if avg_latency > 0 else 0
+
+                person_count_placeholder.markdown(
+                    f"""
+                    <div style="
+                        position: fixed;
+                        bottom: 75px;
+                        right: 20px;
+                        background-color: #FEBA28;
+                        color: black;
+                        padding: 10px 20px;
+                        border-radius: 10px;
+                        font-weight: bold;
+                        font-size: 1rem;
+                        box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+                        z-index: 9999;
+                    ">
+                        Personas detectadas: {person_count}<br>
+                        Chalecos detectados: {hivis_count}<br>
+                        Personas sin chaleco: {personas_sin_chaleco}<br>
+                        Personas con chaleco: {personas_con_chaleco}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                latency_placeholder.markdown(
+                    f"""
+                    <div style="
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        background-color: #FEBA28;
+                        color: black;
+                        padding: 10px 20px;
+                        border-radius: 10px;
+                        font-weight: bold;
+                        font-size: 1rem;
+                        box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+                        z-index: 9999;
+                    ">
+                        Latencia promedio: {avg_latency:.1f} ms &nbsp;|&nbsp; FPS: {avg_fps:.1f}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
             cap.release()
             bar.empty()
-            st.success("✅ Análisis terminado")
+            st.success("Análisis de video terminado")
         os.remove(temp_in)

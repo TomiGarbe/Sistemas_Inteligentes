@@ -7,9 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from ultralytics import YOLO
 
-MODEL_PATH      = "runs/detect/train3/weights/best.pt"
+MODEL_PATH      = "runs/detect/train4/weights/best.pt"
 DATA_YAML       = "config.yaml"
-VAL_RESULTS_CSV = "runs/detect/train3/results.csv"
+VAL_RESULTS_CSV = "runs/detect/train4/results.csv"
 IMG_SIZE        = 640
 BATCH           = 4
 DEVICE          = "cpu"
@@ -102,7 +102,7 @@ def compare_and_plot(val_m, test_m):
     print("\n========== COMPARACIÓN VAL vs TEST ==========")
     for k in val_m:
         delta = (test_m[k] - val_m[k]) * 100
-        print(f"{k:10s}: val={val_m[k]:.3f} | test={test_m[k]:.3f} | Δ={delta:+.1f}%")
+        print(f"{k:10s}: val={val_m[k]*100:.2f}% | test={test_m[k]*100:.2f}% | Δ={delta:+.1f}%")
 
     # Nos aseguramos de que exista la carpeta de salida
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -111,15 +111,15 @@ def compare_and_plot(val_m, test_m):
         plt.figure()
         bars = plt.bar(["Validación", "Test"], [val_m[k], test_m[k]], width=0.5)
         plt.title(f"{k} • Validación vs Test")
-        plt.ylabel(k)
         plt.ylim(0, 1)
-
+        plt.ylabel(f"{k} (%)")
+   
         # Añadimos el valor encima de cada barra
         for idx, height in enumerate([val_m[k], test_m[k]]):
             plt.text(
                 idx,
                 height + 0.02,
-                f"{height:.3f}",
+                f"{height*100:.2f}%",
                 ha="center",
                 va="bottom",
                 fontsize=9
