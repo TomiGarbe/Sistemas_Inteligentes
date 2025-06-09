@@ -242,7 +242,6 @@ with tab1:
             finally:
                 cap.release()
 
-
 # ------------------------------------------
 # 5) TAB 2: ANALIZAR IMAGEN
 # ------------------------------------------
@@ -263,26 +262,47 @@ with tab2:
         
         # Perform detection
         with st.spinner("Analizando imagen..."):
-            results = model(image, conf=0.5)[0]  # conf=0.5 for minimum confidence
-            
+            results = model(image, conf=0.5)[0]
+
+            # --- Contar personas y chalecos ---
+            person_count = sum(1 for box in results.boxes if int(box.cls[0]) == 0)
+            hivis_count = sum(1 for box in results.boxes if int(box.cls[0]) == 1)
+            personas_sin_chaleco = person_count - hivis_count
+            personas_con_chaleco = hivis_count
+
             # Annotate the image with detections
             annotated_image = results.plot()  # Draw bounding boxes and labels
-            
-            # Convert BGR to RGB for Streamlit
             annotated_image_rgb = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
-            
+
         # Display original and annotated images side by side
         ci1, ci2, ci3 = st.columns([1, 2, 1])
-        # Para que se vea la imagen chica a la izquierda, descomentar las dos líneas siguientes:
-        #with ci1:
-        #   st.image(image, caption="Imagen Original", use_container_width=True)
         with ci2:
             st.image(annotated_image_rgb, use_container_width=True)
             st.success("Análisis de imagen terminado")
 
-        # Display detection count
-        #detection_count = len(results.boxes)
-        #st.write(f"Detecciones: {detection_count} (Personas y Chalecos)")
+        st.markdown(
+            f"""
+            <div style="
+                position: fixed;
+                bottom: 75px;
+                right: 20px;
+                background-color: #FEBA28;
+                color: black;
+                padding: 10px 20px;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 1rem;
+                box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+                z-index: 9999;
+            ">
+                Personas detectadas: {person_count}<br>
+                Chalecos detectados: {hivis_count}<br>
+                Personas con chaleco: {personas_con_chaleco}<br>
+                Personas sin chaleco: {personas_sin_chaleco}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 # ------------------------------------------
 # 6) TAB 2: ANALIZAR VIDEO
