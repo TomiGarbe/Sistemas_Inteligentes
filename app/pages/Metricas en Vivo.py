@@ -22,7 +22,7 @@ div[data-testid="stMetric"], p  {
 }
             
 section[data-testid="stSidebar"] {
-    background: #0e1117;  /* Cambiá el alpha a tu gusto */
+    background: #0e1117;
     backdrop-filter: blur(2px);
 } 
             
@@ -91,30 +91,72 @@ if frame_timestamps:
         gcol1, gcol2 = st.columns(2)
 
         with gcol1:
-            st.markdown("**Personas detectadas por frame**")
+            st.markdown("**Personas detectadas en los últimos 60 segundos**")
             fig1, ax1 = plt.subplots(figsize=(5, 2.6))
             y_personas = personas_60s
             x_vals = range(1, len(y_personas) + 1)
             ax1.fill_between(x_vals, y_personas, step="mid", color="#2274A5", alpha=0.45)
-            ax1.plot(x_vals, y_personas, linestyle='-', color="#2274A5", linewidth=2)  # ← sin marker
-            ax1.set_xlabel("Frame (últimos 60s)")
-            ax1.set_ylabel("Cantidad de personas")
+            ax1.plot(x_vals, y_personas, linestyle='-', color="#2274A5", linewidth=2)
+            ax1.set_xlabel("Frames", fontsize=8)
+            ax1.set_ylabel("Cantidad de personas", fontsize=8)
             ax1.set_yticks(range(0, max(y_personas) + 2))
-            ax1.set_title("Personas por frame", fontsize=11)
+            ax1.set_title("Personas por frame", fontsize=8)
             st.pyplot(fig1, use_container_width=True)
         
         with gcol2:
-            st.markdown("**Chalecos detectados por frame**")
+            st.markdown("**Chalecos detectados en los últimos 60 segundos**")
             fig2, ax2 = plt.subplots(figsize=(5, 2.6))
             y_chalecos = chalecos_60s
             x_vals2 = range(1, len(y_chalecos) + 1)
             ax2.fill_between(x_vals2, y_chalecos, step="mid", color="#30c96b", alpha=0.45)
-            ax2.plot(x_vals2, y_chalecos, linestyle='-', color="#30c96b", linewidth=2)  # ← sin marker
-            ax2.set_xlabel("Frame (últimos 60s)")
-            ax2.set_ylabel("Cantidad de chalecos")
+            ax2.plot(x_vals2, y_chalecos, linestyle='-', color="#30c96b", linewidth=2)
+            ax2.set_xlabel("Frames", fontsize=8)
+            ax2.set_ylabel("Cantidad de chalecos", fontsize=8)
             ax2.set_yticks(range(0, max(y_chalecos) + 2))
-            ax2.set_title("Chalecos por frame", fontsize=11)
+            ax2.set_title("Chalecos por frame", fontsize=8)
             st.pyplot(fig2, use_container_width=True)
+
+        # --------- GRAFICO DE TORTA ---------
+        frames = list(zip(personas_60s, chalecos_60s))
+        with_chaleco   = sum(min(p, h) for p, h in frames)
+        without_chaleco = sum(max(p - h, 0) for p, h in frames)
+        chaleco_solo    = sum(max(h - p, 0) for p, h in frames)
+        
+        total_instances = with_chaleco + without_chaleco + chaleco_solo or 1
+        
+        # ── PIE CHART ──
+        labels = []
+        sizes  = []
+        colors = []
+        
+        if with_chaleco:
+            labels.append(f"Personas con chaleco")
+            sizes.append(with_chaleco)
+            colors.append("#2274A5")
+        if without_chaleco:
+            labels.append(f"Personas sin chaleco")
+            sizes.append(without_chaleco)
+            colors.append("#FF595E")
+        if chaleco_solo:
+            labels.append(f"Chalecos solos")
+            sizes.append(chaleco_solo)
+            colors.append("#30c96b")
+        
+        c1, c2, c3 = st.columns([1,1,1])
+        with c2:
+            st.markdown("**Distribución de clases en los últimos 60 segundos**")
+            fig, ax = plt.subplots(figsize=(2, 2))
+            ax.set_title("Distribución de clases", fontsize=5)
+            ax.pie(
+                sizes,
+                labels=labels,
+                colors=colors,
+                autopct="%1.1f%%",
+                startangle=90,
+                textprops={"fontsize": 5, "color": "black"}
+            )
+            ax.axis("equal")
+            st.pyplot(fig, use_container_width=True)
 
 
     else:

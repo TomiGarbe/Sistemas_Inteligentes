@@ -74,6 +74,11 @@ div.st-emotion-cache-fis6aj {
 div.stFileUploaderFile * {
     color: rgba(250, 250, 250, 0.6);
 }
+
+section[data-testid="stSidebar"] {
+    background: #0e1117;
+    backdrop-filter: blur(2px);
+}
                
 </style>
 """, unsafe_allow_html=True)

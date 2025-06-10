@@ -42,6 +42,11 @@ body, .stApp {
 h1, h2, h3, h4, h5, h6, p {
   color: #000000 !important;
 }
+
+section[data-testid="stSidebar"] {
+    background: #0e1117;
+    backdrop-filter: blur(2px);
+} 
 </style>
 """, unsafe_allow_html=True)
 
@@ -76,7 +81,7 @@ with tab1:
     TRAIN_DIR = "../runs/detect/train3"
     train_files = [
         ("Resumen general", "results.png"),
-        ("Matriz de Confusión (sin normalizar)", "confusion_matrix.png"),
+        # ("Matriz de Confusión (sin normalizar)", "confusion_matrix.png"),
         ("Matriz de Confusión (normalizada)", "confusion_matrix_normalized.png"),
         ("Curva Precision-Recall", "PR_curve.png"),
         ("Curva Precision vs Umbral", "P_curve.png"),
@@ -90,17 +95,14 @@ with tab1:
         if os.path.exists(p):
             train_available.append((title, p))
         else:
-            st.warning(f"Entrenamiento ▶ No hallé `{fname}` en `{TRAIN_DIR}`")
+            st.warning(f"No hallé `{fname}` en `{TRAIN_DIR}` en entrenamiento")
+
     for i in range(0, len(train_available), 2):
         cols = st.columns(2)
         for col, (title, path) in zip(cols, train_available[i : i + 2]):
             with col:
                 st.subheader(title)
                 img = Image.open(path)
-                w, h = img.size
-                if h > MAX_HEIGHT:
-                    new_w = int(w * MAX_HEIGHT / h)
-                    img = img.resize((new_w, MAX_HEIGHT), resample=Image.LANCZOS)
                 st.image(img)
         st.markdown("---")
 
@@ -110,7 +112,7 @@ with tab2:
     TEST_DIR = "../runs/detect/test_eval"
 
     test_raw = [
-        ("Matriz de Confusión (sin normalizar)", "confusion_matrix.png"),
+        # ("Matriz de Confusión (sin normalizar)", "confusion_matrix.png"),
         ("Matriz de Confusión (normalizada)", "confusion_matrix_normalized.png"),
         ("Curva Precision-Recall", "PR_curve.png"),
         ("Curva Precision vs Umbral", "P_curve.png"),
@@ -123,17 +125,13 @@ with tab2:
         if os.path.exists(p):
             test_available.append((title, p))
         else:
-            st.warning(f"Test ▶ No hallé `{fname}` en `{TEST_DIR}`")
+            st.warning(f"No hallé `{fname}` en `{TEST_DIR}` en test")
     for i in range(0, len(test_available), 2):
         cols = st.columns(2)
         for col, (title, path) in zip(cols, test_available[i : i + 2]):
             with col:
                 st.subheader(title)
                 img = Image.open(path)
-                w, h = img.size
-                if h > MAX_HEIGHT:
-                    new_w = int(w * MAX_HEIGHT / h)
-                    img = img.resize((new_w, MAX_HEIGHT), resample=Image.LANCZOS)
                 st.image(img)
         st.markdown("---")
 
@@ -161,9 +159,5 @@ with tab3:
             with col:
                 st.subheader(title)
                 img = Image.open(path)
-                w, h = img.size
-                if h > MAX_HEIGHT:
-                    new_w = int(w * MAX_HEIGHT / h)
-                    img = img.resize((new_w, MAX_HEIGHT), resample=Image.LANCZOS)
                 st.image(img)
         st.markdown("---")
