@@ -1,17 +1,17 @@
 # ---------- Cambios de Sentido ----------
-flipud:      0.5   # 50% de probabilidad de voltear verticalmente
-fliplr:      0.5   # 50% de probabilidad de voltear horizontalmente
-degrees:    10.0   # 50% Probabilidad de rotar la imagen en un ángulo aleatorio entre –10° y +10°
-translate:   0.1   # 50% de probabilidad de desplazar hasta ±10% del ancho/alto
-scale:       0.5   # 50% de probabilidad de escalar entre 0.5× y 1.5× del tamaño original
-shear:       2.0   # 50% de probabilidad de sesgar la imagen hasta ±2°
-perspective: 0.0   #  0% de probabilidad de aplicar transformación de perspectiva (desactivado)
+flipud:      0.05   # 5% de las imágenes se voltean verticalmente. 
+fliplr:      0.50   # 50% de las imágenes se voltean horizontalmente.
+degrees:     7.00   # Rotación leve entre -7° y +7°.
+translate:   0.05   # Hasta 5% de corrimiento desde el centro.
+scale:       0.30   # Escala entre 0.7x y 1.3x, hace un zoom suave.
+shear:       1.00   # Hasta ±1° de inclinación.
+perspective: 0.00   # 0% de probabilidad de aplicar el efecto GoPro (ojo de pez).
 
 # ---------- Mezclas de imágenes ----------
-mosaic:      1.0   # 100% de probabilidad de combinar 4 imágenes en un solo collage (mosaic)
-mixup:       0.15  # 15% de probabilidad de superponer dos imágenes (mixup)
+mosaic:      0.10   # 10% de probabilidad de combinar 4 imágenes en un solo collage (mosaic)
+mixup:       0.05   # 15% de probabilidad de superponer dos imágenes (mixup)
 
 # ---------- Cambios de color (HSV) ----------
-hsv_h:     0.015   # cambio aleatorio de tono hasta ±1.5% del rango total
-hsv_s:     0.700   # cambio aleatorio de saturación hasta ±70% de su valor
-hsv_v:     0.400   # cambio aleatorio de brillo hasta ±40% de su valor
+hsv_h:       0.05   # cambio aleatorio de tono hasta ±5% del rango total
+hsv_s:       0.05   # cambio aleatorio de saturación hasta ±5% de su valor
+hsv_v:       0.05   # cambio aleatorio de brillo hasta ±5% de su valor
