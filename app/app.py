@@ -7,7 +7,7 @@ from PIL import Image
 st.set_page_config(page_title="Detección de Personas y Chalecos", layout="wide")
 
 # -------------------------------------------------
-# 1) ESTILOS CSS GLOBALES
+# ESTILOS CSS GLOBALES
 # -------------------------------------------------
 st.markdown("""
 <style>
@@ -84,7 +84,7 @@ section[data-testid="stSidebar"] {
 """, unsafe_allow_html=True)
 
 # ------------------------------------------
-# 2) ENCABEZADO (TÍTULO + SUBTÍTULO)
+# ENCABEZADO (TÍTULO + SUBTÍTULO)
 # ------------------------------------------
 st.markdown(
     "<div style='width:100%; height:10px;"
@@ -103,7 +103,7 @@ st.markdown(
 )
 
 # ------------------------------------------
-# 3) DEFINICIÓN DE LAS PESTAÑAS
+# DEFINICIÓN DE LAS PESTAÑAS
 # ------------------------------------------
 tab1, tab2, tab3 = st.tabs(["Análisis en Vivo", "Análisis de Imagen", "Análisis de Video"])
 
@@ -113,7 +113,7 @@ with st.sidebar:
 
 
 # ------------------------------------------
-# 4) TAB 1: CÁMARA EN VIVO
+# TAB 1: CÁMARA EN VIVO
 # ------------------------------------------
 with tab1:
     st.markdown("<h3 style='text-align:left; color:#000000;'>Análisis en Vivo</h3>", unsafe_allow_html=True)
@@ -248,7 +248,7 @@ with tab1:
                 cap.release()
 
 # ------------------------------------------
-# 5) TAB 2: ANALIZAR IMAGEN
+# TAB 2: ANALIZAR IMAGEN
 # ------------------------------------------
 with tab2:
     st.markdown("<h3 style='text-align:left; color:#000000;'>Análisis de Imagen Subida</h3>", unsafe_allow_html=True)
@@ -310,7 +310,7 @@ with tab2:
         )
 
 # ------------------------------------------
-# 6) TAB 2: ANALIZAR VIDEO
+# TAB 2: ANALIZAR VIDEO
 # ------------------------------------------
 with tab3:
     st.markdown("<h3 style='text-align:left; color:#000000;'>Análisis de Video Subido</h3>", unsafe_allow_html=True)

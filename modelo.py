@@ -1,6 +1,6 @@
 # Importa la clase YOLO de la libería ultralytics, para que puedas crear y entrenar modelos con facilidad.
 from ultralytics import YOLO
-import yaml
+# import yaml
 
 if __name__ == '__main__':
     # Se crea un nuevo moselo desde cero usando la configuración de yolov8n.yaml
