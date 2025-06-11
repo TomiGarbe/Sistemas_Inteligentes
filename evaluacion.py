@@ -7,9 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from ultralytics import YOLO
 
-MODEL_PATH      = "runs/detect/train5/weights/best.pt"
+MODEL_PATH      = "runs/detect/train3/weights/best.pt"
 DATA_YAML       = "config.yaml"
-VAL_RESULTS_CSV = "runs/detect/train5/results.csv"
+VAL_RESULTS_CSV = "runs/detect/train3/results.csv"
 IMG_SIZE        = 640
 BATCH           = 4
 DEVICE          = "cpu"
