@@ -83,10 +83,10 @@ with tab1:
         ("Resumen general", "results.png"),
         # ("Matriz de Confusión (sin normalizar)", "confusion_matrix.png"),
         ("Matriz de Confusión (normalizada)", "confusion_matrix_normalized.png"),
-        ("Curva Precision-Recall", "PR_curve.png"),
-        ("Curva Precision vs Umbral", "P_curve.png"),
-        ("Curva Recall vs Umbral", "R_curve.png"),
-        ("Curva F1 vs Umbral", "F1_curve.png"),
+        ("Curva de Precision", "P_curve.png"),
+        ("Curva de Recall", "R_curve.png"),
+        ("Curva de Precision-Recall", "PR_curve.png"),
+        ("Curva de F1 Score", "F1_curve.png"),
     ]
 
     train_available = []
@@ -95,7 +95,7 @@ with tab1:
         if os.path.exists(p):
             train_available.append((title, p))
         else:
-            st.warning(f"No hallé `{fname}` en `{TRAIN_DIR}` en entrenamiento")
+            st.warning(f"No hallé `{fname}` en `{TRAIN_DIR}`")
 
     for i in range(0, len(train_available), 2):
         cols = st.columns(2)
@@ -114,10 +114,10 @@ with tab2:
     test_raw = [
         # ("Matriz de Confusión (sin normalizar)", "confusion_matrix.png"),
         ("Matriz de Confusión (normalizada)", "confusion_matrix_normalized.png"),
-        ("Curva Precision-Recall", "PR_curve.png"),
-        ("Curva Precision vs Umbral", "P_curve.png"),
-        ("Curva Recall vs Umbral", "R_curve.png"),
-        ("Curva F1 vs Umbral", "F1_curve.png"),
+        ("Curva de Precision", "P_curve.png"),
+        ("Curva de Recall", "R_curve.png"),
+        ("Curva de Precision-Recall", "PR_curve.png"),
+        ("Curva de F1 Score", "F1_curve.png"),
     ]
     test_available = []
     for title, fname in test_raw:
@@ -125,7 +125,7 @@ with tab2:
         if os.path.exists(p):
             test_available.append((title, p))
         else:
-            st.warning(f"No hallé `{fname}` en `{TEST_DIR}` en test")
+            st.warning(f"No hallé `{fname}` en `{TEST_DIR}`")
     for i in range(0, len(test_available), 2):
         cols = st.columns(2)
         for col, (title, path) in zip(cols, test_available[i : i + 2]):
@@ -144,7 +144,7 @@ with tab3:
         ("Precision: Val vs Test", "Precision_val_vs_test.png"),
         ("Recall: Val vs Test", "Recall_val_vs_test.png"),
         ("mAP50: Val vs Test", "mAP50_val_vs_test.png"),
-        ("mAP50–95: Val vs Test", "mAP50-95_val_vs_test.png"),
+        ("mAP50-95: Val vs Test", "mAP50-95_val_vs_test.png"),
     ]
     comp_available = []
     for title, fname in comp_files:
@@ -152,7 +152,7 @@ with tab3:
         if os.path.exists(p):
             comp_available.append((title, p))
         else:
-            st.warning(f"Comparación ▶ No hallé `{fname}` en `{TEST_VALID_DIR}`")
+            st.warning(f"Comparación: No hallé `{fname}` en `{TEST_VALID_DIR}`")
     for i in range(0, len(comp_available), 2):
         cols = st.columns(2)
         for col, (title, path) in zip(cols, comp_available[i : i + 2]):
